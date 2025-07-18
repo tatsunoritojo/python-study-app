@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}ダッシュボード - Python Study App{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>ダッシュボード</h2>
+        <p class="text-muted">こんにちは、{{ current_user.username }}さん！</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <h3>利用可能な試験</h3>
+    </div>
+</div>
+
+<div class="row">
+    {% for exam in exams %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 exam-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h5 class="card-title">{{ exam.title }}</h5>
+                    {% if exam.difficulty == 'beginner' %}
+                        <span class="badge bg-success">初級</span>
+                    {% elif exam.difficulty == 'intermediate' %}
+                        <span class="badge bg-warning">中級</span>
+                    {% else %}
+                        <span class="badge bg-danger">上級</span>
+                    {% endif %}
+                </div>
+                <p class="card-text">{{ exam.description }}</p>
+                <div class="mt-auto">
+                    <a href="{{ url_for('take_exam', exam_id=exam.id) }}" class="btn btn-primary">受験する</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if recent_results %}
+<div class="row mt-5">
+    <div class="col-12">
+        <h3>最近の受験結果</h3>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>試験名</th>
+                        <th>得点</th>
+                        <th>正答率</th>
+                        <th>受験日時</th>
+                        <th>詳細</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in recent_results %}
+                    <tr>
+                        <td>{{ result.exam.title }}</td>
+                        <td>{{ result.score }}/{{ result.total_questions }}</td>
+                        <td>
+                            {% set percentage = (result.score / result.total_questions * 100) | round(1) %}
+                            <div class="progress" style="width: 100px;">
+                                <div class="progress-bar 
+                                    {% if percentage >= 80 %}bg-success
+                                    {% elif percentage >= 60 %}bg-warning
+                                    {% else %}bg-danger
+                                    {% endif %}" 
+                                    role="progressbar" 
+                                    style="width: {{ percentage }}%;">
+                                    {{ percentage }}%
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ result.completed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <a href="{{ url_for('exam_result', result_id=result.id) }}" class="btn btn-sm btn-outline-primary">詳細</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">学習のヒント</h5>
+                <ul class="list-unstyled">
+                    <li>📚 まずは基礎試験から始めて、段階的にレベルアップしましょう</li>
+                    <li>🔄 間違えた問題は解説をよく読んで、理解を深めましょう</li>
+                    <li>📈 定期的に受験して、学習の進捗を確認しましょう</li>
+                    <li>🎯 苦手分野を特定し、重点的に学習しましょう</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

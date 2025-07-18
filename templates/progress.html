@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}学習進捗 - Python Study App{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>学習進捗</h2>
+        <p class="text-muted">あなたの学習履歴と成績を確認できます</p>
+    </div>
+</div>
+
+{% if results %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>受験履歴</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>試験名</th>
+                                <th>難易度</th>
+                                <th>得点</th>
+                                <th>正答率</th>
+                                <th>受験日時</th>
+                                <th>詳細</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in results %}
+                            <tr>
+                                <td>{{ result.exam.title }}</td>
+                                <td>
+                                    {% if result.exam.difficulty == 'beginner' %}
+                                        <span class="badge bg-success">初級</span>
+                                    {% elif result.exam.difficulty == 'intermediate' %}
+                                        <span class="badge bg-warning">中級</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">上級</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ result.score }}/{{ result.total_questions }}</td>
+                                <td>
+                                    {% set percentage = (result.score / result.total_questions * 100) | round(1) %}
+                                    <div class="progress" style="width: 100px;">
+                                        <div class="progress-bar 
+                                            {% if percentage >= 80 %}bg-success
+                                            {% elif percentage >= 60 %}bg-warning
+                                            {% else %}bg-danger
+                                            {% endif %}" 
+                                            role="progressbar" 
+                                            style="width: {{ percentage }}%;">
+                                            {{ percentage }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ result.completed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <a href="{{ url_for('exam_result', result_id=result.id) }}" class="btn btn-sm btn-outline-primary">詳細</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>統計情報</h5>
+            </div>
+            <div class="card-body">
+                {% set total_exams = results | length %}
+                {% set total_score = results | sum(attribute='score') %}
+                {% set total_questions = results | sum(attribute='total_questions') %}
+                {% set avg_percentage = (total_score / total_questions * 100) | round(1) if total_questions > 0 else 0 %}
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h4>{{ total_exams }}</h4>
+                        <p class="text-muted">受験回数</p>
+                    </div>
+                    <div class="col-6">
+                        <h4>{{ avg_percentage }}%</h4>
+                        <p class="text-muted">平均正答率</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>最近の成績傾向</h5>
+            </div>
+            <div class="card-body">
+                {% set recent_results = results[:5] %}
+                {% if recent_results | length >= 2 %}
+                    {% set latest_avg = (recent_results[:2] | sum(attribute='score') / recent_results[:2] | sum(attribute='total_questions') * 100) | round(1) %}
+                    {% set older_avg = (recent_results[2:] | sum(attribute='score') / recent_results[2:] | sum(attribute='total_questions') * 100) | round(1) if recent_results[2:] | length > 0 else latest_avg %}
+                    
+                    <div class="text-center">
+                        {% if latest_avg > older_avg %}
+                            <div class="text-success">
+                                <i class="fas fa-arrow-up"></i>
+                                <h4>向上中</h4>
+                                <p>最近の成績が改善しています</p>
+                            </div>
+                        {% elif latest_avg < older_avg %}
+                            <div class="text-warning">
+                                <i class="fas fa-arrow-down"></i>
+                                <h4>要注意</h4>
+                                <p>最近の成績が下がっています</p>
+                            </div>
+                        {% else %}
+                            <div class="text-info">
+                                <i class="fas fa-minus"></i>
+                                <h4>安定</h4>
+                                <p>成績は安定しています</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <p>データが不足しています<br>もう少し受験してください</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info text-center">
+            <h5>まだ受験履歴がありません</h5>
+            <p>まずは試験を受験してみましょう！</p>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">ダッシュボードに戻る</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

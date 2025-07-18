@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Python Study App - ホーム{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="jumbotron bg-primary text-white p-5 rounded mb-4">
+            <h1 class="display-4">Python認定試験対策</h1>
+            <p class="lead">Python認定試験の合格を目指すための包括的な学習アプリケーションです。</p>
+            {% if not current_user.is_authenticated %}
+            <hr class="my-4">
+            <p>無料で始められる模擬試験で、あなたのPythonスキルを向上させましょう。</p>
+            <a class="btn btn-light btn-lg" href="{{ url_for('register') }}" role="button">今すぐ始める</a>
+            {% else %}
+            <hr class="my-4">
+            <a class="btn btn-light btn-lg" href="{{ url_for('dashboard') }}" role="button">ダッシュボードへ</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">📊 学習統計</h5>
+                <p class="card-text">
+                    <strong>登録ユーザー数:</strong> 13,028人<br>
+                    <strong>利用可能な試験:</strong> 4種類<br>
+                    <strong>難易度レベル:</strong> 3段階
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <h2 class="mb-4">🎯 対応試験一覧</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 exam-card">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <span class="badge bg-success fs-6">Basic</span>
+                </div>
+                <h5 class="card-title">Python基礎試験</h5>
+                <p class="card-text">Pythonの基本的な文法と概念を学習します。</p>
+                <div class="mt-auto">
+                    <small class="text-muted">初心者〜中級者向け</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 exam-card">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <span class="badge bg-info fs-6">Practical</span>
+                </div>
+                <h5 class="card-title">Python実践試験</h5>
+                <p class="card-text">実際のプログラミング問題に取り組みます。</p>
+                <div class="mt-auto">
+                    <small class="text-muted">中級者〜上級者向け</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 exam-card">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <span class="badge bg-warning fs-6">Data Analysis</span>
+                </div>
+                <h5 class="card-title">データ分析試験</h5>
+                <p class="card-text">データ分析に関連するライブラリを学習します。</p>
+                <div class="mt-auto">
+                    <small class="text-muted">中級者向け</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 exam-card">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <span class="badge bg-danger fs-6">Practical Data Analysis</span>
+                </div>
+                <h5 class="card-title">実践データ分析試験</h5>
+                <p class="card-text">実際のデータ分析プロジェクトに取り組みます。</p>
+                <div class="mt-auto">
+                    <small class="text-muted">上級者向け</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <h2 class="mb-4">✨ 主な機能</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">📝 模擬試験</h5>
+                <p class="card-text">本番に近い形式の模擬試験で実力を測定できます。各試験40問、時間制限なしで受験可能です。</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">📈 学習進捗管理</h5>
+                <p class="card-text">受験履歴と成績を記録し、学習の進捗を可視化します。弱点分野の把握にも役立ちます。</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">💡 詳細解説</h5>
+                <p class="card-text">各問題には詳しい解説が付いているので、間違えた問題も理解を深めることができます。</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exam.title }} - Python Study App{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>{{ exam.title }}</h3>
+                <p class="mb-0 text-muted">{{ exam.description }}</p>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h6>受験に関する注意事項</h6>
+                    <ul class="mb-0">
+                        <li>全{{ questions|length }}問です</li>
+                        <li>時間制限はありません</li>
+                        <li>一度提出すると回答の変更はできません</li>
+                    </ul>
+                </div>
+                
+                <form method="POST" action="{{ url_for('submit_exam') }}" id="examForm">
+                    <input type="hidden" name="exam_id" value="{{ exam.id }}">
+                    
+                    {% for question in questions %}
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title">問題 {{ loop.index }}</h6>
+                            <p class="card-text">{{ question.question_text }}</p>
+                            
+                            {% if question.question_type == 'coding' %}
+                            <div class="coding-question" data-question-id="{{ question.id }}">
+                                <textarea id="code-editor-{{ question.id }}" name="question_{{ question.id }}">{{ question.solution_template }}</textarea>
+                                <button type="button" class="btn btn-secondary btn-sm mt-2 run-code-btn">コードを実行</button>
+                                <div class="mt-2">
+                                    <strong>実行結果:</strong>
+                                    <pre class="p-2 bg-light border rounded"><code id="output-{{ question.id }}"></code></pre>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="question_{{ question.id }}" value="A" id="q{{ question.id }}a" required>
+                                <label class="form-check-label" for="q{{ question.id }}a">A. {{ question.option_a }}</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="question_{{ question.id }}" value="B" id="q{{ question.id }}b">
+                                <label class="form-check-label" for="q{{ question.id }}b">B. {{ question.option_b }}</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="question_{{ question.id }}" value="C" id="q{{ question.id }}c">
+                                <label class="form-check-label" for="q{{ question.id }}c">C. {{ question.option_c }}</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="question_{{ question.id }}" value="D" id="q{{ question.id }}d">
+                                <label class="form-check-label" for="q{{ question.id }}d">D. {{ question.option_d }}</label>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg" onclick="return confirm('本当に提出しますか？')">
+                            回答を提出する
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    // Initialize CodeMirror for all coding questions
+    const editors = {};
+    document.querySelectorAll('.coding-question').forEach(container => {
+        const questionId = container.dataset.questionId;
+        const textarea = document.getElementById(`code-editor-${questionId}`);
+        editors[questionId] = CodeMirror.fromTextArea(textarea, {
+            mode: 'python',
+            lineNumbers: true,
+            theme: 'dracula',
+            indentUnit: 4
+        });
+    });
+
+    // Handle code execution
+    let pyodide = null;
+    async function main() {
+        if (!pyodide) {
+            pyodide = await loadPyodide({
+                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.21.3/full/"
+            });
+        }
+        return pyodide;
+    }
+    let pyodideReady = main();
+
+    document.querySelectorAll('.run-code-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const container = e.target.closest('.coding-question');
+            const questionId = container.dataset.questionId;
+            const outputElement = document.getElementById(`output-${questionId}`);
+            const editor = editors[questionId];
+            const code = editor.getValue();
+            
+            outputElement.textContent = '実行中...';
+
+            try {
+                const pyodide = await pyodideReady;
+                // Redirect stdout
+                pyodide.runPython(`
+                    import sys
+                    import io
+                    sys.stdout = io.StringIO()
+                `);
+                let result = pyodide.runPython(code);
+                let stdout = pyodide.runPython("sys.stdout.getvalue()");
+                outputElement.textContent = stdout || '(出力なし)';
+            } catch (err) {
+                outputElement.textContent = err.toString();
+            }
+        });
+    });
+    
+    // Before submitting, update textareas from CodeMirror
+    const examForm = document.getElementById('examForm');
+    examForm.addEventListener('submit', () => {
+        for (const questionId in editors) {
+            editors[questionId].save();
+        }
+    });
+});
+</script>
+{% endblock %}
