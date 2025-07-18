@@ -10,18 +10,26 @@
                 <h3 class="text-center">新規登録</h3>
             </div>
             <div class="card-body">
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>テスト環境について：</strong>
+                    こちらはデモ用のテストページです。メールアドレスは架空のものでも構いません（例：test@example.com）
+                </div>
                 <form method="POST">
                     <div class="mb-3">
                         <label for="username" class="form-label">ユーザー名</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
+                        <input type="text" class="form-control" id="username" name="username" required minlength="3" maxlength="20">
+                        <div class="form-text">3文字以上20文字以下で入力してください</div>
                     </div>
                     <div class="mb-3">
                         <label for="email" class="form-label">メールアドレス</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
+                        <input type="email" class="form-control" id="email" name="email" required placeholder="例：test@example.com">
+                        <div class="form-text">テスト用のため、実際のメールアドレスでなくても登録可能です</div>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">パスワード</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                        <input type="password" class="form-control" id="password" name="password" required minlength="6" maxlength="100">
+                        <div class="form-text">6文字以上で入力してください</div>
                     </div>
                     <div class="d-grid">
                         <button type="submit" class="btn btn-primary">登録</button>

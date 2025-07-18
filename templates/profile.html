@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}マイページ - Python Study App{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>マイページ</h2>
+        <p class="text-muted">{{ current_user.username }}さんのプロフィール</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>プロフィール情報</h5>
+                <a href="{{ url_for('edit_profile') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-edit"></i> 編集
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-5">ユーザー名:</dt>
+                            <dd class="col-sm-7">{{ current_user.username }}</dd>
+                            
+                            <dt class="col-sm-5">メールアドレス:</dt>
+                            <dd class="col-sm-7">{{ current_user.email }}</dd>
+                            
+                            <dt class="col-sm-5">登録日:</dt>
+                            <dd class="col-sm-7">{{ current_user.created_at.strftime('%Y年%m月%d日') }}</dd>
+                            
+                            <dt class="col-sm-5">経験レベル:</dt>
+                            <dd class="col-sm-7">
+                                {% if current_user.experience_level == 'beginner' %}
+                                    <span class="badge bg-success">初心者</span>
+                                {% elif current_user.experience_level == 'intermediate' %}
+                                    <span class="badge bg-warning">中級者</span>
+                                {% elif current_user.experience_level == 'advanced' %}
+                                    <span class="badge bg-danger">上級者</span>
+                                {% else %}
+                                    <span class="text-muted">未設定</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-5">学習目標:</dt>
+                            <dd class="col-sm-7">{{ current_user.learning_goal or '未設定' }}</dd>
+                            
+                            <dt class="col-sm-5">作りたいアプリ:</dt>
+                            <dd class="col-sm-7">{{ current_user.target_app or '未設定' }}</dd>
+                            
+                            <dt class="col-sm-5">週の学習時間:</dt>
+                            <dd class="col-sm-7">
+                                {% if current_user.study_time_per_week %}
+                                    {{ current_user.study_time_per_week }}時間
+                                {% else %}
+                                    未設定
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>学習統計</h5>
+            </div>
+            <div class="card-body">
+                {% if results %}
+                    {% set total_exams = results | length %}
+                    {% set total_score = results | sum(attribute='score') %}
+                    {% set total_questions = results | sum(attribute='total_questions') %}
+                    {% set avg_percentage = (total_score / total_questions * 100) | round(1) if total_questions > 0 else 0 %}
+                    
+                    <div class="text-center">
+                        <div class="mb-3">
+                            <h4 class="text-primary">{{ total_exams }}</h4>
+                            <p class="text-muted">受験回数</p>
+                        </div>
+                        <div class="mb-3">
+                            <h4 class="text-success">{{ avg_percentage }}%</h4>
+                            <p class="text-muted">平均正答率</p>
+                        </div>
+                        <div class="progress mb-3">
+                            <div class="progress-bar 
+                                {% if avg_percentage >= 80 %}bg-success
+                                {% elif avg_percentage >= 60 %}bg-warning
+                                {% else %}bg-danger
+                                {% endif %}" 
+                                role="progressbar" 
+                                style="width: {{ avg_percentage }}%;">
+                            </div>
+                        </div>
+                        <a href="{{ url_for('progress') }}" class="btn btn-outline-primary btn-sm">
+                            詳細な進捗を見る
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <p>まだ受験履歴がありません</p>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-sm">
+                            試験を受験する
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if results %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>最近の受験結果</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>試験名</th>
+                                <th>難易度</th>
+                                <th>得点</th>
+                                <th>正答率</th>
+                                <th>受験日時</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in results[:5] %}
+                            <tr>
+                                <td>{{ result.exam.title }}</td>
+                                <td>
+                                    {% if result.exam.difficulty == 'beginner' %}
+                                        <span class="badge bg-success">初級</span>
+                                    {% elif result.exam.difficulty == 'intermediate' %}
+                                        <span class="badge bg-warning">中級</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">上級</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ result.score }}/{{ result.total_questions }}</td>
+                                <td>
+                                    {% set percentage = (result.score / result.total_questions * 100) | round(1) %}
+                                    {{ percentage }}%
+                                </td>
+                                <td>{{ result.completed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if results | length > 5 %}
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('progress') }}" class="btn btn-outline-primary">
+                            すべての履歴を見る
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

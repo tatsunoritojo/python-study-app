@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}プロフィール編集 - Python Study App{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h3>プロフィール編集</h3>
+                <p class="text-muted mb-0">あなたの学習目標や興味に合わせて、より良い学習体験を提供します</p>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="experience_level" class="form-label">プログラミング経験レベル</label>
+                                <select class="form-select" id="experience_level" name="experience_level">
+                                    <option value="beginner" {% if current_user.experience_level == 'beginner' %}selected{% endif %}>初心者 - プログラミングは初めて</option>
+                                    <option value="intermediate" {% if current_user.experience_level == 'intermediate' %}selected{% endif %}>中級者 - 基本的な知識はある</option>
+                                    <option value="advanced" {% if current_user.experience_level == 'advanced' %}selected{% endif %}>上級者 - 他の言語の経験あり</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="study_time_per_week" class="form-label">週の学習時間（時間）</label>
+                                <select class="form-select" id="study_time_per_week" name="study_time_per_week">
+                                    <option value="0" {% if not current_user.study_time_per_week %}selected{% endif %}>未設定</option>
+                                    <option value="1" {% if current_user.study_time_per_week == 1 %}selected{% endif %}>1時間</option>
+                                    <option value="3" {% if current_user.study_time_per_week == 3 %}selected{% endif %}>3時間</option>
+                                    <option value="5" {% if current_user.study_time_per_week == 5 %}selected{% endif %}>5時間</option>
+                                    <option value="10" {% if current_user.study_time_per_week == 10 %}selected{% endif %}>10時間</option>
+                                    <option value="15" {% if current_user.study_time_per_week == 15 %}selected{% endif %}>15時間以上</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="learning_goal" class="form-label">学習目標</label>
+                        <select class="form-select" id="learning_goal" name="learning_goal">
+                            <option value="" {% if not current_user.learning_goal %}selected{% endif %}>選択してください</option>
+                            <option value="基礎をしっかり身につけたい" {% if current_user.learning_goal == '基礎をしっかり身につけたい' %}selected{% endif %}>基礎をしっかり身につけたい</option>
+                            <option value="Webアプリケーションを作りたい" {% if current_user.learning_goal == 'Webアプリケーションを作りたい' %}selected{% endif %}>Webアプリケーションを作りたい</option>
+                            <option value="データ分析・AI/MLを学びたい" {% if current_user.learning_goal == 'データ分析・AI/MLを学びたい' %}selected{% endif %}>データ分析・AI/MLを学びたい</option>
+                            <option value="自動化ツールを作りたい" {% if current_user.learning_goal == '自動化ツールを作りたい' %}selected{% endif %}>自動化ツールを作りたい</option>
+                            <option value="転職・就職のため" {% if current_user.learning_goal == '転職・就職のため' %}selected{% endif %}>転職・就職のため</option>
+                            <option value="趣味・教養として" {% if current_user.learning_goal == '趣味・教養として' %}selected{% endif %}>趣味・教養として</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="target_app" class="form-label">作りたいアプリケーション</label>
+                        <select class="form-select" id="target_app" name="target_app">
+                            <option value="" {% if not current_user.target_app %}selected{% endif %}>選択してください</option>
+                            <option value="Webサイト・ブログ" {% if current_user.target_app == 'Webサイト・ブログ' %}selected{% endif %}>Webサイト・ブログ</option>
+                            <option value="ECサイト・ショッピングサイト" {% if current_user.target_app == 'ECサイト・ショッピングサイト' %}selected{% endif %}>ECサイト・ショッピングサイト</option>
+                            <option value="SNS・コミュニティサイト" {% if current_user.target_app == 'SNS・コミュニティサイト' %}selected{% endif %}>SNS・コミュニティサイト</option>
+                            <option value="業務管理システム" {% if current_user.target_app == '業務管理システム' %}selected{% endif %}>業務管理システム</option>
+                            <option value="データ分析ツール" {% if current_user.target_app == 'データ分析ツール' %}selected{% endif %}>データ分析ツール</option>
+                            <option value="自動化スクリプト" {% if current_user.target_app == '自動化スクリプト' %}selected{% endif %}>自動化スクリプト</option>
+                            <option value="ゲーム・エンターテイメント" {% if current_user.target_app == 'ゲーム・エンターテイメント' %}selected{% endif %}>ゲーム・エンターテイメント</option>
+                            <option value="AI・機械学習アプリ" {% if current_user.target_app == 'AI・機械学習アプリ' %}selected{% endif %}>AI・機械学習アプリ</option>
+                            <option value="IoT・デバイス制御" {% if current_user.target_app == 'IoT・デバイス制御' %}selected{% endif %}>IoT・デバイス制御</option>
+                            <option value="まだ決まっていない" {% if current_user.target_app == 'まだ決まっていない' %}selected{% endif %}>まだ決まっていない</option>
+                        </select>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>パーソナライズ機能について：</strong>
+                        設定いただいた情報をもとに、あなたに最適な問題や学習コンテンツを提案します。
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('profile') }}" class="btn btn-outline-secondary">キャンセル</a>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

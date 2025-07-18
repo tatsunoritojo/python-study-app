@@ -10,6 +10,12 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///python_study.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# セキュリティ設定
+app.config['SESSION_COOKIE_SECURE'] = True if os.environ.get('DEBUG', 'False').lower() != 'true' else False
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24時間
+
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -25,6 +31,13 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # プロフィール情報
+    learning_goal = db.Column(db.String(200), nullable=True)  # 学習目標
+    target_app = db.Column(db.String(100), nullable=True)  # 作りたいアプリケーション
+    experience_level = db.Column(db.String(50), nullable=True, default='beginner')  # 経験レベル
+    study_time_per_week = db.Column(db.Integer, nullable=True)  # 週の学習時間
+    
     results = db.relationship('ExamResult', backref='user', lazy=True)
 
 class Exam(db.Model):
@@ -70,44 +83,68 @@ def index():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email']
-        password = request.form['password']
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        # バリデーション
+        if not username or len(username) < 3:
+            flash('ユーザー名は3文字以上で入力してください', 'error')
+            return redirect(url_for('register'))
+        
+        if not email or '@' not in email:
+            flash('有効なメールアドレスを入力してください', 'error')
+            return redirect(url_for('register'))
+        
+        if not password or len(password) < 6:
+            flash('パスワードは6文字以上で入力してください', 'error')
+            return redirect(url_for('register'))
         
         if User.query.filter_by(username=username).first():
-            flash('Username already exists')
+            flash('そのユーザー名は既に使用されています', 'error')
             return redirect(url_for('register'))
         
         if User.query.filter_by(email=email).first():
-            flash('Email already exists')
+            flash('そのメールアドレスは既に使用されています', 'error')
             return redirect(url_for('register'))
         
-        user = User(
-            username=username,
-            email=email,
-            password_hash=generate_password_hash(password)
-        )
-        db.session.add(user)
-        db.session.commit()
-        
-        flash('Registration successful')
-        return redirect(url_for('login'))
+        try:
+            user = User(
+                username=username,
+                email=email,
+                password_hash=generate_password_hash(password)
+            )
+            db.session.add(user)
+            db.session.commit()
+            
+            flash('アカウントが作成されました！ログインしてください', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            db.session.rollback()
+            flash('アカウント作成中にエラーが発生しました', 'error')
+            return redirect(url_for('register'))
     
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if not username or not password:
+            flash('ユーザー名とパスワードを入力してください', 'error')
+            return render_template('login.html')
         
         user = User.query.filter_by(username=username).first()
         
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
-            return redirect(url_for('dashboard'))
+            flash(f'ようこそ、{user.username}さん！', 'success')
+            next_page = request.args.get('next')
+            return redirect(next_page) if next_page else redirect(url_for('dashboard'))
         else:
-            flash('Invalid username or password')
+            flash('ユーザー名またはパスワードが正しくありません', 'error')
     
     return render_template('login.html')
 
@@ -120,9 +157,14 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    exams = Exam.query.all()
+    # データベースクエリを最適化
+    exams = Exam.query.order_by(Exam.difficulty, Exam.exam_type).all()
     recent_results = ExamResult.query.filter_by(user_id=current_user.id).order_by(ExamResult.completed_at.desc()).limit(5).all()
-    return render_template('dashboard.html', exams=exams, recent_results=recent_results)
+    
+    # パーソナライズされた推奨試験
+    recommended_exams = get_recommended_exams(current_user)
+    
+    return render_template('dashboard.html', exams=exams, recent_results=recent_results, recommended_exams=recommended_exams)
 
 @app.route('/exam/<int:exam_id>')
 @login_required
@@ -184,6 +226,83 @@ def exam_result(result_id):
 def progress():
     results = ExamResult.query.filter_by(user_id=current_user.id).order_by(ExamResult.completed_at.desc()).all()
     return render_template('progress.html', results=results)
+
+@app.route('/profile')
+@login_required
+def profile():
+    results = ExamResult.query.filter_by(user_id=current_user.id).all()
+    return render_template('profile.html', results=results)
+
+@app.route('/profile/edit', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    if request.method == 'POST':
+        current_user.learning_goal = request.form.get('learning_goal')
+        current_user.target_app = request.form.get('target_app')
+        current_user.experience_level = request.form.get('experience_level')
+        current_user.study_time_per_week = int(request.form.get('study_time_per_week', 0))
+        
+        db.session.commit()
+        flash('プロフィールを更新しました！', 'success')
+        return redirect(url_for('profile'))
+    
+    return render_template('edit_profile.html')
+
+def get_recommended_exams(user):
+    """ユーザーの学習目標と経験レベルに基づいて推奨試験を取得"""
+    recommendations = []
+    
+    # 経験レベルに基づく推奨
+    if user.experience_level == 'beginner':
+        recommendations.append({
+            'reason': '初心者向け：基礎から始めましょう',
+            'exams': Exam.query.filter_by(difficulty='beginner').all()
+        })
+    elif user.experience_level == 'intermediate':
+        recommendations.append({
+            'reason': '中級者向け：応用力を身につけましょう',
+            'exams': Exam.query.filter_by(difficulty='intermediate').all()
+        })
+    elif user.experience_level == 'advanced':
+        recommendations.append({
+            'reason': '上級者向け：高度なスキルを磨きましょう',
+            'exams': Exam.query.filter_by(difficulty='advanced').all()
+        })
+    
+    # 学習目標に基づく推奨
+    if user.learning_goal == 'Webアプリケーションを作りたい':
+        recommendations.append({
+            'reason': 'Webアプリ開発向け：実践的なスキルを身につけましょう',
+            'exams': Exam.query.filter_by(exam_type='practical').all()
+        })
+    elif user.learning_goal == 'データ分析・AI/MLを学びたい':
+        recommendations.append({
+            'reason': 'データ分析向け：データ処理のスキルを身につけましょう',
+            'exams': Exam.query.filter_by(exam_type='data_analysis').all()
+        })
+    
+    # 作りたいアプリケーションに基づく推奨
+    if user.target_app in ['ECサイト・ショッピングサイト', 'SNS・コミュニティサイト', '業務管理システム']:
+        recommendations.append({
+            'reason': 'システム開発向け：実践的なプログラミングスキルを身につけましょう',
+            'exams': Exam.query.filter_by(exam_type='practical').all()
+        })
+    elif user.target_app == 'データ分析ツール':
+        recommendations.append({
+            'reason': 'データ分析向け：データ処理と分析のスキルを身につけましょう',
+            'exams': Exam.query.filter_by(exam_type='practical_data_analysis').all()
+        })
+    
+    return recommendations
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('errors/404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()
+    return render_template('errors/500.html'), 500
 
 if __name__ == '__main__':
     with app.app_context():
