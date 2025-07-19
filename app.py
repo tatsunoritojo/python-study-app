@@ -112,7 +112,8 @@ def register():
             user = User(
                 username=username,
                 email=email,
-                password_hash=generate_password_hash(password)
+                password_hash=generate_password_hash(password),
+                experience_level='beginner'  # デフォルト値を明示的に設定
             )
             db.session.add(user)
             db.session.commit()
@@ -121,7 +122,8 @@ def register():
             return redirect(url_for('login'))
         except Exception as e:
             db.session.rollback()
-            flash('アカウント作成中にエラーが発生しました', 'error')
+            print(f"Registration error: {e}")  # ログ出力
+            flash('アカウント作成中にエラーが発生しました。しばらく時間をおいて再度お試しください。', 'error')
             return redirect(url_for('register'))
     
     return render_template('register.html')
