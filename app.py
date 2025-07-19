@@ -304,6 +304,15 @@ def internal_error(error):
     db.session.rollback()
     return render_template('errors/500.html'), 500
 
+@app.before_first_request
+def create_tables():
+    """初回リクエスト時にテーブルを作成"""
+    try:
+        db.create_all()
+        print("✅ Database tables created successfully")
+    except Exception as e:
+        print(f"❌ Database creation error: {e}")
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
