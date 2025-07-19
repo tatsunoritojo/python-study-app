@@ -383,21 +383,33 @@ def edit_profile():
             current_user.study_time_per_week = int(request.form.get('study_time_per_week', 0))
             
             # 新しいフィールドの安全な更新
-            if hasattr(current_user, 'target_completion_months'):
-                current_user.target_completion_months = int(request.form.get('target_completion_months', 0)) if request.form.get('target_completion_months') else None
+            try:
+                if hasattr(current_user, 'target_completion_months'):
+                    current_user.target_completion_months = int(request.form.get('target_completion_months', 0)) if request.form.get('target_completion_months') else None
+            except:
+                pass
             
-            if hasattr(current_user, 'preferred_learning_style'):
-                current_user.preferred_learning_style = request.form.get('preferred_learning_style')
+            try:
+                if hasattr(current_user, 'preferred_learning_style'):
+                    current_user.preferred_learning_style = request.form.get('preferred_learning_style')
+            except:
+                pass
             
             db.session.commit()
-            flash('プロフィールを更新しました！パーソナライズされたロードマップをご確認ください。', 'success')
-            return redirect(url_for('roadmap'))
+            flash('プロフィールを更新しました！', 'success')
+            return redirect(url_for('dashboard'))
         except Exception as e:
             print(f"Profile update error: {e}")
             flash('プロフィールの更新中にエラーが発生しました。', 'error')
             return redirect(url_for('dashboard'))
     
-    return render_template('edit_profile.html')
+    # テンプレートに安全なユーザーオブジェクトを渡す
+    try:
+        return render_template('edit_profile.html')
+    except Exception as e:
+        print(f"Template rendering error: {e}")
+        flash('プロフィール設定ページの読み込みに失敗しました。', 'error')
+        return redirect(url_for('dashboard'))
 
 def get_recommended_exams(user):
     """ユーザーの学習目標と経験レベルに基づいて推奨試験を取得"""
@@ -654,6 +666,13 @@ def ensure_db_exists():
     if not hasattr(app, '_db_initialized'):
         with app.app_context():
             init_db()
+            # 本番環境でのマイグレーション実行
+            if os.environ.get('DATABASE_URL'):
+                try:
+                    from migrate_database import migrate_database
+                    migrate_database()
+                except Exception as e:
+                    print(f"Migration warning: {e}")
         app._db_initialized = True
 
 if __name__ == '__main__':
