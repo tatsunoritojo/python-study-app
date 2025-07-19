@@ -44,8 +44,11 @@ class User(UserMixin, db.Model):
     target_app = db.Column(db.String(100), nullable=True)  # 作りたいアプリケーション
     experience_level = db.Column(db.String(50), nullable=True, default='beginner')  # 経験レベル
     study_time_per_week = db.Column(db.Integer, nullable=True)  # 週の学習時間
+    target_completion_months = db.Column(db.Integer, nullable=True)  # 目標完了月数
+    preferred_learning_style = db.Column(db.String(100), nullable=True)  # 学習スタイル
     
     results = db.relationship('ExamResult', backref='user', lazy=True)
+    roadmap_progress = db.relationship('RoadmapProgress', backref='user', lazy=True)
 
 class Exam(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -87,6 +90,28 @@ class ExamResult(db.Model):
     score = db.Column(db.Integer, nullable=False)
     total_questions = db.Column(db.Integer, nullable=False)
     completed_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class RoadmapStep(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    step_order = db.Column(db.Integer, nullable=False)
+    category = db.Column(db.String(100), nullable=False)  # foundation, web_dev, data_analysis, etc.
+    estimated_hours = db.Column(db.Integer, nullable=False)
+    required_for_goals = db.Column(db.String(500))  # カンマ区切りの目標リスト
+    exam_ids = db.Column(db.String(200))  # 関連する試験ID（カンマ区切り）
+    resources = db.Column(db.Text)  # 学習リソースのJSON
+
+class RoadmapProgress(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    step_id = db.Column(db.Integer, db.ForeignKey('roadmap_step.id'), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='not_started')  # not_started, in_progress, completed
+    started_at = db.Column(db.DateTime)
+    completed_at = db.Column(db.DateTime)
+    notes = db.Column(db.Text)
+    
+    step = db.relationship('RoadmapStep', backref='progress_records')
 
 @app.route('/')
 def index():
@@ -353,10 +378,12 @@ def edit_profile():
         current_user.target_app = request.form.get('target_app')
         current_user.experience_level = request.form.get('experience_level')
         current_user.study_time_per_week = int(request.form.get('study_time_per_week', 0))
+        current_user.target_completion_months = int(request.form.get('target_completion_months', 0)) if request.form.get('target_completion_months') else None
+        current_user.preferred_learning_style = request.form.get('preferred_learning_style')
         
         db.session.commit()
-        flash('プロフィールを更新しました！', 'success')
-        return redirect(url_for('profile'))
+        flash('プロフィールを更新しました！パーソナライズされたロードマップをご確認ください。', 'success')
+        return redirect(url_for('roadmap'))
     
     return render_template('edit_profile.html')
 
@@ -426,6 +453,183 @@ def init_db():
     except Exception as e:
         print(f"❌ Database initialization error: {e}")
         return False
+
+@app.route('/roadmap')
+@login_required
+def roadmap():
+    """ユーザーのパーソナライズされた学習ロードマップを表示"""
+    # ユーザーの設定に基づいてロードマップを生成
+    roadmap_data = generate_personalized_roadmap(current_user)
+    
+    # ユーザーの進捗を取得
+    progress_data = get_user_progress(current_user)
+    
+    return render_template('roadmap.html', 
+                         roadmap=roadmap_data, 
+                         progress=progress_data,
+                         user_profile=current_user)
+
+def generate_personalized_roadmap(user):
+    """ユーザーのプロフィールに基づいてパーソナライズされたロードマップを生成"""
+    roadmap = {
+        'title': f'{user.username}さんの学習ロードマップ',
+        'estimated_duration': calculate_estimated_duration(user),
+        'steps': []
+    }
+    
+    # 基本的なPythonスキル
+    if user.experience_level == 'beginner':
+        roadmap['steps'].extend([
+            {
+                'id': 1,
+                'title': 'Python基礎',
+                'description': 'Pythonの基本文法、変数、データ型',
+                'category': 'foundation',
+                'estimated_hours': 20,
+                'skills': ['変数と代入', 'データ型', '基本演算'],
+                'exams': ['Python基礎試験 - 初級'],
+                'status': 'available'
+            },
+            {
+                'id': 2,
+                'title': '制御構造',
+                'description': 'if文、ループ処理、条件分岐',
+                'category': 'foundation',
+                'estimated_hours': 15,
+                'skills': ['if文', 'for/whileループ', '条件演算子'],
+                'exams': ['Python基礎試験 - 初級'],
+                'status': 'locked'
+            },
+            {
+                'id': 3,
+                'title': 'データ構造',
+                'description': 'リスト、辞書、タプル、セット',
+                'category': 'foundation',
+                'estimated_hours': 18,
+                'skills': ['リスト操作', '辞書の活用', 'タプルとセット'],
+                'exams': ['Python基礎試験 - 中級'],
+                'status': 'locked'
+            }
+        ])
+    elif user.experience_level == 'intermediate':
+        roadmap['steps'].extend([
+            {
+                'id': 1,
+                'title': 'Python復習',
+                'description': 'Pythonの特徴的な機能の理解',
+                'category': 'foundation',
+                'estimated_hours': 10,
+                'skills': ['リスト内包表記', 'lambda関数', 'デコレータ'],
+                'exams': ['Python基礎試験 - 中級'],
+                'status': 'available'
+            }
+        ])
+    
+    # 学習目標に応じた専門スキル
+    if user.learning_goal and 'Web' in user.learning_goal:
+        roadmap['steps'].extend([
+            {
+                'id': 10,
+                'title': 'Webフレームワーク基礎',
+                'description': 'FlaskまたはDjangoの基本',
+                'category': 'web_development',
+                'estimated_hours': 25,
+                'skills': ['HTTP理解', 'テンプレート', 'ルーティング'],
+                'exams': ['Web開発実践試験'],
+                'status': 'locked'
+            },
+            {
+                'id': 11,
+                'title': 'データベース連携',
+                'description': 'SQLとORM',
+                'category': 'web_development',
+                'estimated_hours': 20,
+                'skills': ['SQL基礎', 'ORM操作', 'マイグレーション'],
+                'exams': ['データベース基礎試験'],
+                'status': 'locked'
+            }
+        ])
+    elif user.learning_goal and 'データ分析' in user.learning_goal:
+        roadmap['steps'].extend([
+            {
+                'id': 20,
+                'title': 'データ分析ライブラリ',
+                'description': 'NumPy, Pandas, Matplotlib',
+                'category': 'data_analysis',
+                'estimated_hours': 30,
+                'skills': ['NumPy配列', 'Pandas操作', '可視化'],
+                'exams': ['データ分析基礎試験'],
+                'status': 'locked'
+            }
+        ])
+    elif user.learning_goal and '自動化' in user.learning_goal:
+        roadmap['steps'].extend([
+            {
+                'id': 30,
+                'title': 'スクリプト作成',
+                'description': 'ファイル操作、API連携',
+                'category': 'automation',
+                'estimated_hours': 15,
+                'skills': ['ファイル処理', 'API活用', 'スケジューリング'],
+                'exams': ['自動化スクリプト試験'],
+                'status': 'locked'
+            }
+        ])
+    
+    # 最終プロジェクト
+    roadmap['steps'].append({
+        'id': 99,
+        'title': '実践プロジェクト',
+        'description': f'{user.target_app or "選択したアプリケーション"}の開発',
+        'category': 'project',
+        'estimated_hours': 40,
+        'skills': ['プロジェクト設計', '実装', 'デプロイ'],
+        'exams': ['最終プロジェクト評価'],
+        'status': 'locked'
+    })
+    
+    return roadmap
+
+def calculate_estimated_duration(user):
+    """ユーザーの学習時間に基づいて推定期間を計算"""
+    base_hours = 80  # 基本的な学習時間
+    
+    if user.experience_level == 'beginner':
+        base_hours = 120
+    elif user.experience_level == 'intermediate':
+        base_hours = 80
+    elif user.experience_level == 'advanced':
+        base_hours = 50
+    
+    # 学習目標による追加時間
+    if user.learning_goal:
+        if 'Web' in user.learning_goal:
+            base_hours += 50
+        elif 'データ分析' in user.learning_goal:
+            base_hours += 60
+        elif '自動化' in user.learning_goal:
+            base_hours += 30
+    
+    weekly_hours = user.study_time_per_week or 5
+    estimated_weeks = base_hours / weekly_hours
+    
+    return {
+        'total_hours': base_hours,
+        'weeks': int(estimated_weeks),
+        'weekly_hours': weekly_hours
+    }
+
+def get_user_progress(user):
+    """ユーザーの学習進捗を取得"""
+    # 実際のデータベースから進捗を取得（今回は簡単な例）
+    completed_exams = ExamResult.query.filter_by(user_id=user.id).count()
+    total_exams = Exam.query.count()
+    
+    return {
+        'completed_exams': completed_exams,
+        'total_exams': total_exams,
+        'completion_percentage': (completed_exams / total_exams * 100) if total_exams > 0 else 0
+    }
 
 # Renderでの初回リクエスト時に初期化
 @app.before_request

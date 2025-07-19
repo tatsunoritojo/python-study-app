@@ -396,7 +396,7 @@ def init_sample_data():
             db.session.add(question)
         
         db.session.commit()
-        print("サンプルデータが正常に作成されました！")
+        print("サンプルデータが正常に作成されました")
 
 if __name__ == "__main__":
     init_sample_data()

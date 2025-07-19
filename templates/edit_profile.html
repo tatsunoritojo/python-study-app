@@ -1,87 +1,385 @@
 {% extends "base.html" %}
 
-{% block title %}プロフィール編集 - Python Study App{% endblock %}
+{% block title %}プロフィール設定 - Python Study App{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
-                <h3>プロフィール編集</h3>
-                <p class="text-muted mb-0">あなたの学習目標や興味に合わせて、より良い学習体験を提供します</p>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="bg-gradient-primary text-white p-4 rounded mb-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="mb-2">学習プロフィール設定</h2>
+                        <p class="mb-0">あなたの目標に合わせたパーソナライズされた学習体験を作成しましょう</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-user-graduate fa-3x opacity-75"></i>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <form method="POST">
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h4 class="mb-0">基本情報</h4>
+                    <small class="text-muted">学習計画を作成するための基本情報を設定してください</small>
+                </div>
+                <div class="card-body">
+                <form method="POST" id="profileForm">
                     <div class="row">
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="experience_level" class="form-label">プログラミング経験レベル</label>
-                                <select class="form-select" id="experience_level" name="experience_level">
+                            <div class="mb-4">
+                                <label for="experience_level" class="form-label fw-bold">
+                                    <i class="fas fa-chart-line text-primary me-2"></i>プログラミング経験レベル
+                                </label>
+                                <select class="form-select form-select-lg" id="experience_level" name="experience_level" onchange="updateRoadmapPreview()">
                                     <option value="beginner" {% if current_user.experience_level == 'beginner' %}selected{% endif %}>初心者 - プログラミングは初めて</option>
                                     <option value="intermediate" {% if current_user.experience_level == 'intermediate' %}selected{% endif %}>中級者 - 基本的な知識はある</option>
                                     <option value="advanced" {% if current_user.experience_level == 'advanced' %}selected{% endif %}>上級者 - 他の言語の経験あり</option>
                                 </select>
+                                <div class="form-text">現在のプログラミングスキルレベルを選択してください</div>
                             </div>
                         </div>
                         
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="study_time_per_week" class="form-label">週の学習時間（時間）</label>
-                                <select class="form-select" id="study_time_per_week" name="study_time_per_week">
+                            <div class="mb-4">
+                                <label for="study_time_per_week" class="form-label fw-bold">
+                                    <i class="fas fa-clock text-primary me-2"></i>週の学習時間
+                                </label>
+                                <select class="form-select form-select-lg" id="study_time_per_week" name="study_time_per_week" onchange="updateRoadmapPreview()">
                                     <option value="0" {% if not current_user.study_time_per_week %}selected{% endif %}>未設定</option>
-                                    <option value="1" {% if current_user.study_time_per_week == 1 %}selected{% endif %}>1時間</option>
-                                    <option value="3" {% if current_user.study_time_per_week == 3 %}selected{% endif %}>3時間</option>
-                                    <option value="5" {% if current_user.study_time_per_week == 5 %}selected{% endif %}>5時間</option>
-                                    <option value="10" {% if current_user.study_time_per_week == 10 %}selected{% endif %}>10時間</option>
-                                    <option value="15" {% if current_user.study_time_per_week == 15 %}selected{% endif %}>15時間以上</option>
+                                    <option value="1" {% if current_user.study_time_per_week == 1 %}selected{% endif %}>1-2時間（ゆっくりペース）</option>
+                                    <option value="3" {% if current_user.study_time_per_week == 3 %}selected{% endif %}>3-4時間（標準ペース）</option>
+                                    <option value="5" {% if current_user.study_time_per_week == 5 %}selected{% endif %}>5-7時間（しっかりペース）</option>
+                                    <option value="10" {% if current_user.study_time_per_week == 10 %}selected{% endif %}>10-12時間（集中ペース）</option>
+                                    <option value="15" {% if current_user.study_time_per_week == 15 %}selected{% endif %}>15時間以上（短期集中）</option>
                                 </select>
+                                <div class="form-text">1週間に確保できる学習時間を選択してください</div>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="learning_goal" class="form-label">学習目標</label>
-                        <select class="form-select" id="learning_goal" name="learning_goal">
-                            <option value="" {% if not current_user.learning_goal %}selected{% endif %}>選択してください</option>
-                            <option value="基礎をしっかり身につけたい" {% if current_user.learning_goal == '基礎をしっかり身につけたい' %}selected{% endif %}>基礎をしっかり身につけたい</option>
-                            <option value="Webアプリケーションを作りたい" {% if current_user.learning_goal == 'Webアプリケーションを作りたい' %}selected{% endif %}>Webアプリケーションを作りたい</option>
-                            <option value="データ分析・AI/MLを学びたい" {% if current_user.learning_goal == 'データ分析・AI/MLを学びたい' %}selected{% endif %}>データ分析・AI/MLを学びたい</option>
-                            <option value="自動化ツールを作りたい" {% if current_user.learning_goal == '自動化ツールを作りたい' %}selected{% endif %}>自動化ツールを作りたい</option>
-                            <option value="転職・就職のため" {% if current_user.learning_goal == '転職・就職のため' %}selected{% endif %}>転職・就職のため</option>
-                            <option value="趣味・教養として" {% if current_user.learning_goal == '趣味・教養として' %}selected{% endif %}>趣味・教養として</option>
-                        </select>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="learning_goal" class="form-label fw-bold">
+                                    <i class="fas fa-target text-primary me-2"></i>学習目標
+                                </label>
+                                <select class="form-select form-select-lg" id="learning_goal" name="learning_goal" onchange="updateRoadmapPreview()">
+                                    <option value="" {% if not current_user.learning_goal %}selected{% endif %}>選択してください</option>
+                                    <option value="基礎をしっかり身につけたい" {% if current_user.learning_goal == '基礎をしっかり身につけたい' %}selected{% endif %}>基礎をしっかり身につけたい</option>
+                                    <option value="Webアプリケーションを作りたい" {% if current_user.learning_goal == 'Webアプリケーションを作りたい' %}selected{% endif %}>Webアプリケーションを作りたい</option>
+                                    <option value="データ分析・AI/MLを学びたい" {% if current_user.learning_goal == 'データ分析・AI/MLを学びたい' %}selected{% endif %}>データ分析・AI/MLを学びたい</option>
+                                    <option value="自動化ツールを作りたい" {% if current_user.learning_goal == '自動化ツールを作りたい' %}selected{% endif %}>自動化ツールを作りたい</option>
+                                    <option value="転職・就職のため" {% if current_user.learning_goal == '転職・就職のため' %}selected{% endif %}>転職・就職のため</option>
+                                    <option value="趣味・教養として" {% if current_user.learning_goal == '趣味・教養として' %}selected{% endif %}>趣味・教養として</option>
+                                </select>
+                                <div class="form-text">最も重要な学習目標を選択してください</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="target_completion_months" class="form-label fw-bold">
+                                    <i class="fas fa-calendar-alt text-primary me-2"></i>目標完了期間
+                                </label>
+                                <select class="form-select form-select-lg" id="target_completion_months" name="target_completion_months" onchange="updateRoadmapPreview()">
+                                    <option value="" {% if not current_user.target_completion_months %}selected{% endif %}>設定しない</option>
+                                    <option value="1" {% if current_user.target_completion_months == 1 %}selected{% endif %}>1ヶ月以内</option>
+                                    <option value="3" {% if current_user.target_completion_months == 3 %}selected{% endif %}>3ヶ月以内</option>
+                                    <option value="6" {% if current_user.target_completion_months == 6 %}selected{% endif %}>6ヶ月以内</option>
+                                    <option value="12" {% if current_user.target_completion_months == 12 %}selected{% endif %}>1年以内</option>
+                                    <option value="24" {% if current_user.target_completion_months == 24 %}selected{% endif %}>2年以内</option>
+                                </select>
+                                <div class="form-text">目標を達成したい期間を選択してください</div>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="target_app" class="form-label">作りたいアプリケーション</label>
-                        <select class="form-select" id="target_app" name="target_app">
-                            <option value="" {% if not current_user.target_app %}selected{% endif %}>選択してください</option>
-                            <option value="Webサイト・ブログ" {% if current_user.target_app == 'Webサイト・ブログ' %}selected{% endif %}>Webサイト・ブログ</option>
-                            <option value="ECサイト・ショッピングサイト" {% if current_user.target_app == 'ECサイト・ショッピングサイト' %}selected{% endif %}>ECサイト・ショッピングサイト</option>
-                            <option value="SNS・コミュニティサイト" {% if current_user.target_app == 'SNS・コミュニティサイト' %}selected{% endif %}>SNS・コミュニティサイト</option>
-                            <option value="業務管理システム" {% if current_user.target_app == '業務管理システム' %}selected{% endif %}>業務管理システム</option>
-                            <option value="データ分析ツール" {% if current_user.target_app == 'データ分析ツール' %}selected{% endif %}>データ分析ツール</option>
-                            <option value="自動化スクリプト" {% if current_user.target_app == '自動化スクリプト' %}selected{% endif %}>自動化スクリプト</option>
-                            <option value="ゲーム・エンターテイメント" {% if current_user.target_app == 'ゲーム・エンターテイメント' %}selected{% endif %}>ゲーム・エンターテイメント</option>
-                            <option value="AI・機械学習アプリ" {% if current_user.target_app == 'AI・機械学習アプリ' %}selected{% endif %}>AI・機械学習アプリ</option>
-                            <option value="IoT・デバイス制御" {% if current_user.target_app == 'IoT・デバイス制御' %}selected{% endif %}>IoT・デバイス制御</option>
-                            <option value="まだ決まっていない" {% if current_user.target_app == 'まだ決まっていない' %}selected{% endif %}>まだ決まっていない</option>
-                        </select>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="target_app" class="form-label fw-bold">
+                                    <i class="fas fa-laptop-code text-primary me-2"></i>作りたいアプリケーション
+                                </label>
+                                <select class="form-select form-select-lg" id="target_app" name="target_app" onchange="updateRoadmapPreview()">
+                                    <option value="" {% if not current_user.target_app %}selected{% endif %}>選択してください</option>
+                                    <option value="Webサイト・ブログ" {% if current_user.target_app == 'Webサイト・ブログ' %}selected{% endif %}>Webサイト・ブログ</option>
+                                    <option value="ECサイト・ショッピングサイト" {% if current_user.target_app == 'ECサイト・ショッピングサイト' %}selected{% endif %}>ECサイト・ショッピングサイト</option>
+                                    <option value="SNS・コミュニティサイト" {% if current_user.target_app == 'SNS・コミュニティサイト' %}selected{% endif %}>SNS・コミュニティサイト</option>
+                                    <option value="業務管理システム" {% if current_user.target_app == '業務管理システム' %}selected{% endif %}>業務管理システム</option>
+                                    <option value="データ分析ツール" {% if current_user.target_app == 'データ分析ツール' %}selected{% endif %}>データ分析ツール</option>
+                                    <option value="自動化スクリプト" {% if current_user.target_app == '自動化スクリプト' %}selected{% endif %}>自動化スクリプト</option>
+                                    <option value="ゲーム・エンターテイメント" {% if current_user.target_app == 'ゲーム・エンターテイメント' %}selected{% endif %}>ゲーム・エンターテイメント</option>
+                                    <option value="AI・機械学習アプリ" {% if current_user.target_app == 'AI・機械学習アプリ' %}selected{% endif %}>AI・機械学習アプリ</option>
+                                    <option value="IoT・デバイス制御" {% if current_user.target_app == 'IoT・デバイス制御' %}selected{% endif %}>IoT・デバイス制御</option>
+                                    <option value="まだ決まっていない" {% if current_user.target_app == 'まだ決まっていない' %}selected{% endif %}>まだ決まっていない</option>
+                                </select>
+                                <div class="form-text">最終的に作成したいアプリケーションの種類</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="preferred_learning_style" class="form-label fw-bold">
+                                    <i class="fas fa-brain text-primary me-2"></i>学習スタイル
+                                </label>
+                                <select class="form-select form-select-lg" id="preferred_learning_style" name="preferred_learning_style">
+                                    <option value="" {% if not current_user.preferred_learning_style %}selected{% endif %}>選択してください</option>
+                                    <option value="理論重視" {% if current_user.preferred_learning_style == '理論重視' %}selected{% endif %}>理論重視 - 基礎をしっかり理解したい</option>
+                                    <option value="実践重視" {% if current_user.preferred_learning_style == '実践重視' %}selected{% endif %}>実践重視 - 手を動かして学びたい</option>
+                                    <option value="バランス型" {% if current_user.preferred_learning_style == 'バランス型' %}selected{% endif %}>バランス型 - 理論と実践を組み合わせたい</option>
+                                    <option value="プロジェクト志向" {% if current_user.preferred_learning_style == 'プロジェクト志向' %}selected{% endif %}>プロジェクト志向 - 実際の開発を通して学びたい</option>
+                                </select>
+                                <div class="form-text">あなたに合った学習方法を選択してください</div>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="alert alert-info">
-                        <i class="fas fa-lightbulb"></i>
-                        <strong>パーソナライズ機能について：</strong>
-                        設定いただいた情報をもとに、あなたに最適な問題や学習コンテンツを提案します。
+                    <div class="alert alert-light border border-primary">
+                        <div class="row align-items-center">
+                            <div class="col-md-2 text-center">
+                                <i class="fas fa-magic fa-2x text-primary"></i>
+                            </div>
+                            <div class="col-md-10">
+                                <h6 class="alert-heading mb-2">パーソナライズされた学習体験</h6>
+                                <p class="mb-0">設定いただいた情報をもとに、あなただけの学習ロードマップと最適な問題を自動生成します。</p>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="{{ url_for('profile') }}" class="btn btn-outline-secondary">キャンセル</a>
-                        <button type="submit" class="btn btn-primary">保存</button>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-arrow-left me-2"></i>ダッシュボードに戻る
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save me-2"></i>設定を保存してロードマップを作成
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
+        
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-route text-primary me-2"></i>学習ロードマップ プレビュー
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="roadmapPreview">
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-map fa-2x mb-3"></i>
+                            <p>左側のフォームを入力すると、<br>あなた専用のロードマップが表示されます</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb text-warning me-2"></i>学習のコツ
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>現実的な学習時間を設定しましょう</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>明確な目標を持つと継続しやすくなります</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>小さな成功を積み重ねることが大切です</small>
+                        </li>
+                        <li>
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>実際にコードを書いて練習しましょう</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
 {% endblock %}
+
+{% block scripts %}
+<script>
+function updateRoadmapPreview() {
+    const experience = document.getElementById('experience_level').value;
+    const studyTime = document.getElementById('study_time_per_week').value;
+    const goal = document.getElementById('learning_goal').value;
+    const targetMonths = document.getElementById('target_completion_months').value;
+    const targetApp = document.getElementById('target_app').value;
+    
+    if (!experience || !studyTime || !goal) {
+        return;
+    }
+    
+    const preview = document.getElementById('roadmapPreview');
+    
+    // 学習時間に基づく推定完了時間の計算
+    let estimatedWeeks = 12; // デフォルト
+    if (experience === 'beginner') estimatedWeeks = 16;
+    if (experience === 'intermediate') estimatedWeeks = 10;
+    if (experience === 'advanced') estimatedWeeks = 6;
+    
+    // 学習時間による調整
+    const timeMultiplier = {
+        '1': 2.0,
+        '3': 1.5,
+        '5': 1.0,
+        '10': 0.7,
+        '15': 0.5
+    };
+    
+    estimatedWeeks = Math.ceil(estimatedWeeks * (timeMultiplier[studyTime] || 1.0));
+    
+    // ロードマップステップの生成
+    let steps = [];
+    
+    if (experience === 'beginner') {
+        steps = [
+            { title: 'Python基礎', weeks: Math.ceil(estimatedWeeks * 0.3), icon: 'fas fa-play-circle' },
+            { title: '制御構造とデータ型', weeks: Math.ceil(estimatedWeeks * 0.2), icon: 'fas fa-code-branch' },
+            { title: '関数とモジュール', weeks: Math.ceil(estimatedWeeks * 0.2), icon: 'fas fa-puzzle-piece' }
+        ];
+    } else if (experience === 'intermediate') {
+        steps = [
+            { title: 'Python復習', weeks: Math.ceil(estimatedWeeks * 0.2), icon: 'fas fa-redo' },
+            { title: 'オブジェクト指向', weeks: Math.ceil(estimatedWeeks * 0.3), icon: 'fas fa-cubes' }
+        ];
+    } else {
+        steps = [
+            { title: 'Python特有の機能', weeks: Math.ceil(estimatedWeeks * 0.3), icon: 'fas fa-star' }
+        ];
+    }
+    
+    // 目標に応じた追加ステップ
+    if (goal.includes('Web')) {
+        steps.push({ title: 'Flask/Django', weeks: Math.ceil(estimatedWeeks * 0.3), icon: 'fas fa-globe' });
+    } else if (goal.includes('データ分析')) {
+        steps.push({ title: 'NumPy/Pandas', weeks: Math.ceil(estimatedWeeks * 0.3), icon: 'fas fa-chart-bar' });
+    } else if (goal.includes('自動化')) {
+        steps.push({ title: 'スクリプト作成', weeks: Math.ceil(estimatedWeeks * 0.3), icon: 'fas fa-robot' });
+    }
+    
+    steps.push({ title: '実践プロジェクト', weeks: Math.ceil(estimatedWeeks * 0.2), icon: 'fas fa-rocket' });
+    
+    // HTMLの生成
+    let html = `
+        <div class="mb-3">
+            <h6 class="text-primary">推定学習期間: ${estimatedWeeks}週間</h6>
+            <div class="progress mb-2" style="height: 6px;">
+                <div class="progress-bar bg-primary" style="width: 0%" id="progressBar"></div>
+            </div>
+            <small class="text-muted">週${studyTime}時間の学習で</small>
+        </div>
+        <div class="timeline">
+    `;
+    
+    steps.forEach((step, index) => {
+        html += `
+            <div class="timeline-item">
+                <div class="timeline-marker">
+                    <i class="${step.icon} text-primary"></i>
+                </div>
+                <div class="timeline-content">
+                    <h6 class="mb-1">${step.title}</h6>
+                    <small class="text-muted">${step.weeks}週間</small>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    
+    preview.innerHTML = html;
+    
+    // 簡単なアニメーション
+    setTimeout(() => {
+        const progressBar = document.getElementById('progressBar');
+        if (progressBar) {
+            progressBar.style.width = '100%';
+            progressBar.style.transition = 'width 2s ease-in-out';
+        }
+    }, 500);
+}
+
+// ページ読み込み時に初期プレビューを表示
+document.addEventListener('DOMContentLoaded', function() {
+    updateRoadmapPreview();
+});
+</script>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    height: 100%;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -22px;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+
+.timeline-content {
+    background: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.form-select-lg {
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+}
+
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+</style>
