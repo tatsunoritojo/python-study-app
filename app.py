@@ -7,11 +7,18 @@ import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///python_study.db')
+
+# データベース設定 - Render用に調整
+database_url = os.environ.get('DATABASE_URL')
+if database_url and database_url.startswith('postgres://'):
+    # Render PostgreSQLのURL修正
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///python_study.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # セキュリティ設定
-app.config['SESSION_COOKIE_SECURE'] = True if os.environ.get('DEBUG', 'False').lower() != 'true' else False
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24時間
@@ -307,12 +314,19 @@ def internal_error(error):
     return render_template('errors/500.html'), 500
 
 # データベース初期化
-with app.app_context():
+def init_db():
+    """データベースを安全に初期化"""
     try:
-        db.create_all()
-        print("✅ Database initialized")
+        with app.app_context():
+            db.create_all()
+            print("✅ Database tables created successfully")
     except Exception as e:
-        print(f"❌ Database error: {e}")
+        print(f"❌ Database initialization error: {e}")
+        # エラーが発生してもアプリケーションは継続
+        pass
+
+# アプリケーション起動時に初期化
+init_db()
 
 if __name__ == '__main__':
     app.run(debug=os.environ.get('DEBUG', 'False').lower() == 'true', host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
