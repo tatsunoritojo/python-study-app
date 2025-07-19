@@ -87,12 +87,12 @@
                                     <i class="fas fa-calendar-alt text-primary me-2"></i>目標完了期間
                                 </label>
                                 <select class="form-select form-select-lg" id="target_completion_months" name="target_completion_months" onchange="updateRoadmapPreview()">
-                                    <option value="" {% if not current_user.target_completion_months %}selected{% endif %}>設定しない</option>
-                                    <option value="1" {% if current_user.target_completion_months == 1 %}selected{% endif %}>1ヶ月以内</option>
-                                    <option value="3" {% if current_user.target_completion_months == 3 %}selected{% endif %}>3ヶ月以内</option>
-                                    <option value="6" {% if current_user.target_completion_months == 6 %}selected{% endif %}>6ヶ月以内</option>
-                                    <option value="12" {% if current_user.target_completion_months == 12 %}selected{% endif %}>1年以内</option>
-                                    <option value="24" {% if current_user.target_completion_months == 24 %}selected{% endif %}>2年以内</option>
+                                    <option value="">設定しない</option>
+                                    <option value="1">1ヶ月以内</option>
+                                    <option value="3">3ヶ月以内</option>
+                                    <option value="6">6ヶ月以内</option>
+                                    <option value="12">1年以内</option>
+                                    <option value="24">2年以内</option>
                                 </select>
                                 <div class="form-text">目標を達成したい期間を選択してください</div>
                             </div>
@@ -128,11 +128,11 @@
                                     <i class="fas fa-brain text-primary me-2"></i>学習スタイル
                                 </label>
                                 <select class="form-select form-select-lg" id="preferred_learning_style" name="preferred_learning_style">
-                                    <option value="" {% if not current_user.preferred_learning_style %}selected{% endif %}>選択してください</option>
-                                    <option value="理論重視" {% if current_user.preferred_learning_style == '理論重視' %}selected{% endif %}>理論重視 - 基礎をしっかり理解したい</option>
-                                    <option value="実践重視" {% if current_user.preferred_learning_style == '実践重視' %}selected{% endif %}>実践重視 - 手を動かして学びたい</option>
-                                    <option value="バランス型" {% if current_user.preferred_learning_style == 'バランス型' %}selected{% endif %}>バランス型 - 理論と実践を組み合わせたい</option>
-                                    <option value="プロジェクト志向" {% if current_user.preferred_learning_style == 'プロジェクト志向' %}selected{% endif %}>プロジェクト志向 - 実際の開発を通して学びたい</option>
+                                    <option value="">選択してください</option>
+                                    <option value="理論重視">理論重視 - 基礎をしっかり理解したい</option>
+                                    <option value="実践重視">実践重視 - 手を動かして学びたい</option>
+                                    <option value="バランス型">バランス型 - 理論と実践を組み合わせたい</option>
+                                    <option value="プロジェクト志向">プロジェクト志向 - 実際の開発を通して学びたい</option>
                                 </select>
                                 <div class="form-text">あなたに合った学習方法を選択してください</div>
                             </div>

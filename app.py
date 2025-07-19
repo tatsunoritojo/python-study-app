@@ -376,16 +376,26 @@ def profile():
 @login_required
 def edit_profile():
     if request.method == 'POST':
-        current_user.learning_goal = request.form.get('learning_goal')
-        current_user.target_app = request.form.get('target_app')
-        current_user.experience_level = request.form.get('experience_level')
-        current_user.study_time_per_week = int(request.form.get('study_time_per_week', 0))
-        current_user.target_completion_months = int(request.form.get('target_completion_months', 0)) if request.form.get('target_completion_months') else None
-        current_user.preferred_learning_style = request.form.get('preferred_learning_style')
-        
-        db.session.commit()
-        flash('プロフィールを更新しました！パーソナライズされたロードマップをご確認ください。', 'success')
-        return redirect(url_for('roadmap'))
+        try:
+            current_user.learning_goal = request.form.get('learning_goal')
+            current_user.target_app = request.form.get('target_app')
+            current_user.experience_level = request.form.get('experience_level')
+            current_user.study_time_per_week = int(request.form.get('study_time_per_week', 0))
+            
+            # 新しいフィールドの安全な更新
+            if hasattr(current_user, 'target_completion_months'):
+                current_user.target_completion_months = int(request.form.get('target_completion_months', 0)) if request.form.get('target_completion_months') else None
+            
+            if hasattr(current_user, 'preferred_learning_style'):
+                current_user.preferred_learning_style = request.form.get('preferred_learning_style')
+            
+            db.session.commit()
+            flash('プロフィールを更新しました！パーソナライズされたロードマップをご確認ください。', 'success')
+            return redirect(url_for('roadmap'))
+        except Exception as e:
+            print(f"Profile update error: {e}")
+            flash('プロフィールの更新中にエラーが発生しました。', 'error')
+            return redirect(url_for('dashboard'))
     
     return render_template('edit_profile.html')
 
@@ -480,7 +490,8 @@ def generate_personalized_roadmap(user):
     }
     
     # 基本的なPythonスキル
-    if user.experience_level == 'beginner':
+    experience_level = getattr(user, 'experience_level', 'beginner')
+    if experience_level == 'beginner':
         roadmap['steps'].extend([
             {
                 'id': 1,
@@ -513,7 +524,7 @@ def generate_personalized_roadmap(user):
                 'status': 'locked'
             }
         ])
-    elif user.experience_level == 'intermediate':
+    elif experience_level == 'intermediate':
         roadmap['steps'].extend([
             {
                 'id': 1,
@@ -528,7 +539,8 @@ def generate_personalized_roadmap(user):
         ])
     
     # 学習目標に応じた専門スキル
-    if user.learning_goal and 'Web' in user.learning_goal:
+    learning_goal = getattr(user, 'learning_goal', '')
+    if learning_goal and 'Web' in learning_goal:
         roadmap['steps'].extend([
             {
                 'id': 10,
@@ -551,7 +563,7 @@ def generate_personalized_roadmap(user):
                 'status': 'locked'
             }
         ])
-    elif user.learning_goal and 'データ分析' in user.learning_goal:
+    elif learning_goal and 'データ分析' in learning_goal:
         roadmap['steps'].extend([
             {
                 'id': 20,
@@ -564,7 +576,7 @@ def generate_personalized_roadmap(user):
                 'status': 'locked'
             }
         ])
-    elif user.learning_goal and '自動化' in user.learning_goal:
+    elif learning_goal and '自動化' in learning_goal:
         roadmap['steps'].extend([
             {
                 'id': 30,
@@ -582,7 +594,7 @@ def generate_personalized_roadmap(user):
     roadmap['steps'].append({
         'id': 99,
         'title': '実践プロジェクト',
-        'description': f'{user.target_app or "選択したアプリケーション"}の開発',
+        'description': f'{getattr(user, "target_app", None) or "選択したアプリケーション"}の開発',
         'category': 'project',
         'estimated_hours': 40,
         'skills': ['プロジェクト設計', '実装', 'デプロイ'],
@@ -596,23 +608,25 @@ def calculate_estimated_duration(user):
     """ユーザーの学習時間に基づいて推定期間を計算"""
     base_hours = 80  # 基本的な学習時間
     
-    if user.experience_level == 'beginner':
+    experience_level = getattr(user, 'experience_level', 'beginner')
+    if experience_level == 'beginner':
         base_hours = 120
-    elif user.experience_level == 'intermediate':
+    elif experience_level == 'intermediate':
         base_hours = 80
-    elif user.experience_level == 'advanced':
+    elif experience_level == 'advanced':
         base_hours = 50
     
     # 学習目標による追加時間
-    if user.learning_goal:
-        if 'Web' in user.learning_goal:
+    learning_goal = getattr(user, 'learning_goal', '')
+    if learning_goal:
+        if 'Web' in learning_goal:
             base_hours += 50
-        elif 'データ分析' in user.learning_goal:
+        elif 'データ分析' in learning_goal:
             base_hours += 60
-        elif '自動化' in user.learning_goal:
+        elif '自動化' in learning_goal:
             base_hours += 30
     
-    weekly_hours = user.study_time_per_week or 5
+    weekly_hours = getattr(user, 'study_time_per_week', 5) or 5
     estimated_weeks = base_hours / weekly_hours
     
     return {
