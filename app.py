@@ -115,7 +115,9 @@ class RoadmapProgress(db.Model):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    # トップページで表示する試験の一覧を取得
+    featured_exams = Exam.query.limit(4).all()
+    return render_template('index.html', featured_exams=featured_exams)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
