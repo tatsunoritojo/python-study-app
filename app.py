@@ -69,6 +69,11 @@ class Question(db.Model):
     option_d = db.Column(db.String(200), nullable=True)
     correct_answer = db.Column(db.String(1), nullable=True)  # A, B, C, or D
     
+    # 解説と学習支援
+    explanation = db.Column(db.Text, nullable=True)  # 解説
+    additional_info = db.Column(db.Text, nullable=True)  # 周辺知識
+    difficulty_level = db.Column(db.Integer, default=1)  # 1-5の難易度
+    
     # For coding questions
     solution_template = db.Column(db.Text, nullable=True)
     test_code = db.Column(db.Text, nullable=True)
@@ -180,7 +185,105 @@ def dashboard():
 def take_exam(exam_id):
     exam = Exam.query.get_or_404(exam_id)
     questions = Question.query.filter_by(exam_id=exam_id).all()
-    return render_template('exam.html', exam=exam, questions=questions)
+    
+    if not questions:
+        flash('この試験には問題が設定されていません', 'warning')
+        return redirect(url_for('dashboard'))
+    
+    # セッションに試験情報を保存
+    session['current_exam'] = {
+        'exam_id': exam_id,
+        'question_ids': [q.id for q in questions],
+        'current_question': 0,
+        'answers': {},
+        'correct_count': 0
+    }
+    
+    return redirect(url_for('exam_question', question_number=1))
+
+@app.route('/exam/question/<int:question_number>')
+@login_required
+def exam_question(question_number):
+    if 'current_exam' not in session:
+        flash('試験セッションが見つかりません', 'error')
+        return redirect(url_for('dashboard'))
+    
+    exam_data = session['current_exam']
+    total_questions = len(exam_data['question_ids'])
+    
+    if question_number > total_questions:
+        return redirect(url_for('exam_complete'))
+    
+    question_id = exam_data['question_ids'][question_number - 1]
+    question = Question.query.get_or_404(question_id)
+    exam = Exam.query.get_or_404(exam_data['exam_id'])
+    
+    progress_percentage = ((question_number - 1) / total_questions) * 100
+    
+    return render_template('exam_question.html', 
+                         exam=exam, 
+                         question=question, 
+                         question_number=question_number,
+                         total_questions=total_questions,
+                         progress_percentage=progress_percentage)
+
+@app.route('/exam/answer', methods=['POST'])
+@login_required
+def submit_answer():
+    if 'current_exam' not in session:
+        return redirect(url_for('dashboard'))
+    
+    exam_data = session['current_exam']
+    question_number = int(request.form.get('question_number'))
+    user_answer = request.form.get('answer')
+    question_id = exam_data['question_ids'][question_number - 1]
+    
+    question = Question.query.get_or_404(question_id)
+    is_correct = user_answer == question.correct_answer
+    
+    # 答えを記録
+    exam_data['answers'][question_id] = {
+        'user_answer': user_answer,
+        'correct_answer': question.correct_answer,
+        'is_correct': is_correct
+    }
+    
+    if is_correct:
+        exam_data['correct_count'] += 1
+    
+    session['current_exam'] = exam_data
+    
+    return render_template('answer_feedback.html',
+                         question=question,
+                         user_answer=user_answer,
+                         is_correct=is_correct,
+                         question_number=question_number,
+                         total_questions=len(exam_data['question_ids']))
+
+@app.route('/exam/complete')
+@login_required
+def exam_complete():
+    if 'current_exam' not in session:
+        return redirect(url_for('dashboard'))
+    
+    exam_data = session['current_exam']
+    exam = Exam.query.get_or_404(exam_data['exam_id'])
+    
+    # 結果を保存
+    result = ExamResult(
+        user_id=current_user.id,
+        exam_id=exam_data['exam_id'],
+        score=exam_data['correct_count'],
+        total_questions=len(exam_data['question_ids'])
+    )
+    db.session.add(result)
+    db.session.commit()
+    
+    # セッションをクリア
+    session.pop('current_exam', None)
+    
+    flash(f'試験が完了しました！ {exam_data["correct_count"]}/{len(exam_data["question_ids"])} 問正解', 'success')
+    return redirect(url_for('exam_result', result_id=result.id))
 
 @app.route('/submit_exam', methods=['POST'])
 @login_required
@@ -313,20 +416,25 @@ def internal_error(error):
     db.session.rollback()
     return render_template('errors/500.html'), 500
 
-# データベース初期化
+# データベース初期化を遅延実行
 def init_db():
     """データベースを安全に初期化"""
     try:
-        with app.app_context():
-            db.create_all()
-            print("✅ Database tables created successfully")
+        db.create_all()
+        print("✅ Database tables created successfully")
+        return True
     except Exception as e:
         print(f"❌ Database initialization error: {e}")
-        # エラーが発生してもアプリケーションは継続
-        pass
+        return False
 
-# アプリケーション起動時に初期化
-init_db()
+# Renderでの初回リクエスト時に初期化
+@app.before_request
+def ensure_db_exists():
+    """リクエスト前にデータベースの存在を確認"""
+    if not hasattr(app, '_db_initialized'):
+        with app.app_context():
+            init_db()
+        app._db_initialized = True
 
 if __name__ == '__main__':
     app.run(debug=os.environ.get('DEBUG', 'False').lower() == 'true', host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
